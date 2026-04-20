@@ -1,107 +1,117 @@
-# New Nx Repository
+# 🚀 Nexus Delivery - Ecosystem
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+![Nexus Delivery Architecture](https://img.shields.io/badge/Architecture-Microservices-orange)
+![Stack](https://img.shields.io/badge/Stack-NestJS%20%7C%20Next.js%20%7C%20Kafka-blue)
+![Deploy](https://img.shields.io/badge/Infra-Kubernetes-blueviolet)
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+**Nexus Delivery** is a high-performance distributed delivery platform inspired by industry leaders like Uber Eats and Glovo. It is designed to solve real-world challenges related to scalability, resilience, and maintainability in mission-critical systems.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-## Finish your Nx platform setup
+---
 
-🚀 [Finish setting up your workspace](https://cloud.nx.app/connect/oM75Z0WrSN) to get faster builds with remote caching, distributed task execution, and self-healing CI. [Learn more about Nx Cloud](https://nx.dev/ci/intro/why-nx-cloud).
+## 🧠 Architectural Philosophy
 
-## Generate a library
+This project goes beyond simple CRUD applications. It is a complete ecosystem built on:
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+* **Domain-Driven Design (DDD):** Strong focus on core business logic with well-defined *Bounded Contexts* to avoid tight coupling.
+* **Event-Driven Architecture (EDA):** Asynchronous communication using Apache Kafka ensures that failures in one service do not bring down the entire system.
+* **Zero-Trust Security:** Centralized authentication handled at the API Gateway (Global Auth).
+* **Observability First:** The system is fully monitored from day one (Metrics, Logs, and Traces).
+
+---
+
+## 🧩 Tech Stack & Rationale
+
+| Layer                   | Technology           | Why?                                                                                       |
+| :---------------------- | :------------------- | :----------------------------------------------------------------------------------------- |
+| **Monorepo**            | **Nx + Turborepo**   | Efficient multi-service management, shared contracts (DTOs), and ultra-fast build caching. |
+| **Backend**             | **NestJS + Fastify** | Robust modular architecture with high-performance Fastify adapter.                         |
+| **Frontend**            | **Next.js 14+**      | App Router, Server Components for better SEO and performance, and native SSR support.      |
+| **Messaging**           | **Apache Kafka**     | Industry-standard for high-scale distributed systems and eventual consistency.             |
+| **Database**            | **PostgreSQL**       | Reliable relational database for critical transactions like orders and payments.           |
+| **Cache**               | **Redis**            | Significant latency reduction for menu queries and session management.                     |
+| **Infra/Orchestration** | **Kubernetes**       | Auto-healing, horizontal scaling (HPA), and container orchestration.                       |
+
+---
+
+## 📁 Project Structure
+
+The monorepo approach enables code sharing between Backend and Frontend via the `packages` directory.
+
+```text
+nexus-delivery/
+├── apps/
+│   ├── order-service/        # Order orchestration
+│   ├── payment-service/      # Payment processing
+│   ├── catalog-service/      # Menus and restaurants
+│   ├── notification-service/ # WebSockets and alerts
+│   ├── identity-service/     # Authentication and users
+│   └── web-client/           # Next.js frontend
+├── packages/
+│   ├── common/               # Middlewares and utilities
+│   ├── contracts/            # Event schemas and TS interfaces
+│   └── database/             # Global Prisma configuration
+├── infra/
+│   ├── docker/               # Development Docker Compose setup
+│   └── k8s/                  # Kubernetes manifests (Deployments, Services, HPA)
+└── .github/workflows/        # CI/CD pipelines
 ```
 
-## Run tasks
+---
 
-To build the library use:
+## ⚙️ Getting Started
 
-```sh
-npx nx build pkg1
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/your-username/nexus-delivery.git
+cd nexus-delivery
+npm install
 ```
 
-To run any task with Nx use:
+### 2. Local Infrastructure (Docker)
 
-```sh
-npx nx <target> <project-name>
+Start PostgreSQL, Kafka, and Redis with a single command:
+
+```bash
+docker-compose -f infra/docker/docker-compose.yml up -d
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+### 3. Run the Ecosystem
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Turborepo will start all services in parallel:
 
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
+```bash
+npx turbo run dev
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+---
 
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 🚢 CI/CD & Deployment
 
-## Keep TypeScript project references up to date
+Our GitHub Actions pipeline automates the entire lifecycle:
 
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
+* **Continuous Integration (CI):** Runs linting and automated tests on every push.
+* **Dockerization:** Builds lightweight multi-stage production images.
+* **Continuous Deployment (CD):** Automatically updates the Kubernetes cluster via `kubectl rollout`.
 
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+---
 
-```sh
-npx nx sync
-```
+## 🛡️ Gateway Authentication (Global Auth)
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+For performance and security, Nexus avoids validating JWTs inside each microservice.
 
-```sh
-npx nx sync:check
-```
+* NGINX Ingress intercepts incoming requests.
+* Identity Service validates the token.
+* If valid, the Gateway injects the `x-user-id` header and forwards the request.
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+This approach removes authentication logic from business services, making them lighter and more focused.
 
-## Nx Cloud
+---
 
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+## 📈 Observability
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Access dashboards to monitor the system health:
 
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+* **Grafana:** http://localhost:3001 (Traffic and error metrics)
+* **Jaeger:** http://localhost:16686 (Distributed tracing)
+* **Prometheus:** http://localhost:9090 (Raw metrics collection)
